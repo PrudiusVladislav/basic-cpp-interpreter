@@ -54,12 +54,3 @@ int main() {
 
     return 0;
 };
-
-
-// {
-//     // std::cout << "Result: " << tree->evaluate() << std::endl;
-//     // std::cout << "a: " << variables["a"] << std::endl;
-//
-//     // string input = "def myfunc(a, b) { min(a, b) + max(a, b) }; myfunc(3, 4)";
-//     // TODO: user defined functions does not work
-// }

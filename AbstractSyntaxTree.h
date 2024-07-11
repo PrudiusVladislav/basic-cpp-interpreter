@@ -52,7 +52,20 @@ public:
 
 using FunctionDef = std::function<double(const std::vector<double>&)>;
 inline std::map<std::string, FunctionDef> functions;
+inline std::map<std::string, std::shared_ptr<FunctionDefExpression>> userFunctions;
 inline std::map<std::string, double> variables;
+
+class FunctionDefExpression final : public Expression {
+public:
+    std::string name;
+    std::vector<std::string> params;
+    ExpressionPtr body;
+
+    FunctionDefExpression(std::string name, std::vector<std::string> params, ExpressionPtr body)
+        : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
+
+    double evaluate() override { return 0; }
+};
 
 class MethodCallExpression final : public Expression {
     std::string name;
@@ -60,12 +73,24 @@ class MethodCallExpression final : public Expression {
 public:
     MethodCallExpression(std::string name, std::vector<ExpressionPtr> args) : name(std::move(name)), args(std::move(args)) {}
     double evaluate() override {
-        auto evaluatedArgs = std::vector<double>(args.size());
-        for (size_t i = 0; i < args.size(); ++i) {
-            double value = args[i]->evaluate();
-            evaluatedArgs[i] = value;
+        auto it = userFunctions.find(name);
+        if (it != userFunctions.end()) {
+            const auto& funcDef = it->second;
+            std::map<std::string, double> oldVariables = variables;
+
+            for (size_t i = 0; i < funcDef->params.size(); ++i) {
+                variables[funcDef->params[i]] = args[i]->evaluate();
+            }
+
+            double result = funcDef->body->evaluate();
+            variables = oldVariables;
+            return result;
         }
 
+        std::vector<double> evaluatedArgs;
+        for (auto& arg : args) {
+            evaluatedArgs.push_back(arg->evaluate());
+        }
         return functions[name](evaluatedArgs);
     }
 };
@@ -103,20 +128,6 @@ public:
         }
         return result;
     }
-};
-
-inline std::map<std::string, std::shared_ptr<FunctionDefExpression>> userFunctions;
-
-class FunctionDefExpression final : public Expression {
-public:
-    std::string name;
-    std::vector<std::string> params;
-    ExpressionPtr body;
-
-    FunctionDefExpression(std::string name, std::vector<std::string> params, ExpressionPtr body)
-        : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
-
-    double evaluate() override { return 0; }
 };
 
 
